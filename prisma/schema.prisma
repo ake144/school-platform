@@ -1,0 +1,196 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+model Teacher {
+  id       String   @id @default(cuid())
+  teacherId  String   @unique
+  name     String
+  email    String
+  photo   String
+  phone    String
+  classes  Class[]
+  address  String
+  subjects Subject[]
+  lessons  Lesson[]
+  exams    Exam[]
+  assignments Assignment[]
+}
+
+
+model Parent {
+  id        String   @id @default(cuid())
+  parentId  String   @unique
+  name      String
+  email     String
+  photo    String
+  phone     String
+  address   String
+  students  Student[]
+}
+
+
+
+model Class {
+  id        String   @id @default(cuid())
+  classId   String   @unique
+  name      String
+  capacity  Int
+  teachers   Teacher   @relation(fields: [teacherId], references: [teacherId])
+  teacherId String
+
+  students  Student[]
+  subjects  Subject[]
+  exams     Exam[]
+  Lesson Lesson[]
+  assignments Assignment[]
+  event     Event[]
+
+  announcement  Announcements[]
+  
+}
+
+model Student {
+  id        String   @id @default(cuid())
+  studentId String   @unique
+  name      String
+  email     String
+  photo    String
+  phone     String
+  grade     Int
+  class     Class    @relation(fields: [classId], references: [classId])
+  classId   String
+  address   String
+
+  examResult    ExamResult[]
+  assignmentResult    AssignmentResult[]
+  parent    Parent  @relation(fields: [parentId], references: [parentId])
+  parentId  String
+}
+
+model Subject {
+  id        String   @id @default(cuid())
+  subjectId String   @unique
+  name      String
+  classes   Class[]
+  teachers  Teacher[]
+  lessons   Lesson[]
+  exams     Exam[]
+  assignments Assignment[]
+}
+
+
+
+model Lesson {
+  id        String   @id @default(cuid())
+  name      String
+  date      DateTime
+  class     Class    @relation(fields: [classId], references: [classId])
+  classId   String
+  teacher   Teacher  @relation(fields: [teacherId], references: [teacherId])
+  teacherId String
+  subject   Subject  @relation(fields: [subjectId], references: [subjectId])
+  subjectId String
+}
+
+
+
+model Exam {
+  id        String   @id @default(cuid())
+  examId    String   @unique
+  name      String
+  date      DateTime
+  class     Class    @relation(fields: [classId], references: [classId])
+  classId   String
+  teacher   Teacher  @relation(fields: [teacherId], references: [teacherId])
+  teacherId String
+  subject   Subject  @relation(fields: [subjectId], references: [subjectId])
+  subjectId String
+
+  results   ExamResult[]
+}
+
+
+model Assignment {
+  id        String   @id @default(cuid())
+  name      String
+  dueDate      DateTime
+  class     Class    @relation(fields: [classId], references: [classId])
+  classId   String
+  teacher   Teacher  @relation(fields: [teacherId], references: [teacherId])
+  teacherId String
+  subject   Subject  @relation(fields: [subjectId], references: [subjectId])
+  subjectId String
+
+  AssignmentResult AssignmentResult[]
+}
+
+
+model ExamResult {
+  id        String   @id @default(cuid())
+  student   Student  @relation(fields: [studentId], references: [studentId])
+  studentId String
+  exam      Exam     @relation(fields: [examId], references: [examId])
+  examId    String
+  marks     Int
+  grade     String
+  remarks   String
+}
+
+model AssignmentResult {
+   id        String   @id @default(cuid())
+  student   Student  @relation(fields: [studentId], references: [studentId])
+  studentId String
+  assignment    Assignment     @relation(fields: [assId], references: [id])
+  assId    String
+  marks     Int
+  grade     String
+  remarks   String
+}
+
+
+model Event {
+
+  id    String   @id @default(cuid())
+  title      String
+  startTime   String
+  endTime     String
+  date        String
+  class      Class    @relation(fields: [classId], references: [classId])
+  classId      String
+}
+
+
+model  Announcements {
+  id      String  @id    @default(cuid())
+  title       String
+  date          DateTime
+  class        Class   @relation(fields: [classId], references: [classId])
+  classId   String
+
+}
+
+model  CalendarEvents {
+  id     String   @id    @default(cuid())
+   
+   title           String
+   allDay          Boolean
+   start             DateTime
+   end          DateTime
+}
