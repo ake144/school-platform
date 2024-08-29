@@ -5,25 +5,21 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     // Parse incoming request
+
+    console.log('webhook  received');
     const evt = (await req.json()) as WebhookEvent;
 
-    // Extract event type and data
-    const { type, data } = evt;
-    const { id: clerkUserId } = data;
 
-    if (!clerkUserId) {
-      return NextResponse.json(
-        { error: 'No user ID provided' },
-        { status: 400 }
-      );
-    }
 
+    const userData = evt.data as any;
+
+
+     const {id:clerkUserId,email_addresses,last_name , first_name , image_url, } = userData;  
+   
     let user = null;
 
-    switch (type) {
+    switch (evt.type) {
       case 'user.created': {
-        // Safely extract necessary fields from the event data
-        const { email_addresses, first_name, last_name } = data;
         const email = email_addresses?.[0]?.email_address || '';
 
         try {
@@ -34,12 +30,14 @@ export async function POST(req: Request) {
             update: {
               name: `${first_name || ''} ${last_name || ''}`.trim(),
               email,
+              photo: image_url,
             },
             create: {
               clerkUserId,
               name: `${first_name || ''} ${last_name || ''}`.trim(),
               email,
               role: 'Student',
+              photo: image_url,
             },
           });
         } catch (prismaError) {
@@ -71,7 +69,7 @@ export async function POST(req: Request) {
 
       default:
         // Log and return ignored event types
-        console.log(`Unhandled event type: ${type}`);
+        console.log(`Unhandled event type: ${evt.type}`);
         return NextResponse.json({ message: 'Event ignored' });
     }
 
