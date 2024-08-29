@@ -10,4 +10,18 @@ export interface StudentSchema {
     parentId?: string;      // The ID of the parent associated with the student
     userId: string;         // ID linking to the User model
   }
+
+
+  export interface UserSchema {
+    
+    name: string;           // User's full name
+    email: string;          // Email address of the user
+    role: string;           // Role of the user (Student, Teacher, Admin, Parent)
+    address?: string;
+    phone?:string;
+    photo?:string;
+    clerkUserId?:string;
+
+
+  }
   
