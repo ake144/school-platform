@@ -37,7 +37,8 @@ export async function POST(req: Request) {
             clerkUserId,
             name: `${first_name || ''} ${last_name || ''}`.trim(),
             email,
-            // Add additional fields if needed, like default roles, etc.
+            role: 'Student',
+            
           },
         });
         break;
