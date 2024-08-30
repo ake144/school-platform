@@ -7,69 +7,52 @@ export async function POST(req: Request) {
     console.log('Webhook received');
     const evt = (await req.json()) as WebhookEvent;
 
-    console.log('Parsed event:', evt);
+    
+    const userData = evt.data as any; // Typecast to any to access properties directly
+    const { id: clerkUserId, email_addresses, first_name, last_name, photo:image_url } = userData;
+    const email = email_addresses?.[0]?.email_address || "";
 
-    const userData = evt.data as any;
-    console.log('User data:', userData);
+    if (!clerkUserId) {
+      console.error('No user ID provided');
+      return NextResponse.json({ error: 'No user ID provided' }, { status: 400 });
+    }
 
-    const { id: clerkUserId, email, name, photo } = userData;
-
-    let user = null;
+    let user = null
 
     switch (evt.type) {
-      case 'user.created': {
-        console.log('Handling user.created event');
-        try {
-          user = await prisma.user.upsert({
-            where: {
-              clerkUserId,
-            },
-            update: {
-              name,
-              email,
-              photo,
-            },
-            create: {
-              clerkUserId,
-              name,
-              email,
-              role: 'Student',
-              photo,
-            },
-          });
-          console.log('User upserted:', user);
-        } catch (prismaError) {
-          console.error('Prisma error:', prismaError);
-          return NextResponse.json(
-            { error: 'Failed to create or update user in the database' },
-            { status: 500 }
-          );
-        }
-        break;
-      }
+      case 'user.created':
 
-      case 'user.deleted': {
-        console.log('Handling user.deleted event');
-        try {
-          user = await prisma.user.delete({
+        user = await prisma.user.upsert({
+          where: {
+            clerkUserId,
+          },
+          update: {
+            name: `${first_name} ${last_name}`,
+            email,
+            role: 'Student',
+            photo:image_url,
+          },
+          create: {
+            clerkUserId,
+            name: `${first_name} ${last_name}`,
+            email,
+            role: 'Student',
+            photo:image_url,
+          },
+        });
+        console.log('User created:', user);
+        break;
+      case 'user.deleted':
+       user = await prisma.user.delete({
             where: {
               clerkUserId,
             },
           });
-          console.log('User deleted:', user);
-        } catch (prismaError) {
-          console.error('Prisma error:', prismaError);
-          return NextResponse.json(
-            { error: 'Failed to delete user from the database' },
-            { status: 500 }
-          );
-        }
+        console.log('User deleted:', user);
         break;
-      }
-
       default:
-        console.log(`Unhandled event type: ${evt.type}`);
-        return NextResponse.json({ message: 'Event ignored' });
+        console.warn('Unhandled event type:', evt.type);
+        break;
     }
 
     return NextResponse.json({ user });
@@ -81,3 +64,6 @@ export async function POST(req: Request) {
     );
   }
 }
+
+
+
