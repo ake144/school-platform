@@ -1,3 +1,4 @@
+import { createUser, UpdateUser } from '@/lib/actions/create/user';
 import prisma from '@/lib/prisma';
 import type { WebhookEvent } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
@@ -8,61 +9,60 @@ export async function POST(req: Request) {
     const evt = (await req.json()) as WebhookEvent;
 
     
-    const userData = evt.data as any; // Typecast to any to access properties directly
-    const { id: clerkUserId, email_addresses, first_name, last_name, photo:image_url } = userData;
-    const email = email_addresses?.[0]?.email_address || "";
+    const userData = evt.data as any; 
 
-    if (!clerkUserId) {
-      console.error('No user ID provided');
-      return NextResponse.json({ error: 'No user ID provided' }, { status: 400 });
-    }
+        if(evt.type === 'user.created'){
+              const {id, email_addresses, first_name, last_name, image_url} = evt.data
 
-    let user = null
+              if(!id  || !email_addresses){
+                return new Response('Invalid data', {status: 400})
 
-    switch (evt.type) {
-      case 'user.created':
+              }
 
-        user = await prisma.user.upsert({
-          where: {
-            clerkUserId,
-          },
-          update: {
-            name: `${first_name} ${last_name}`,
-            email,
-            role: 'Student',
-            photo:image_url,
-          },
-          create: {
-            clerkUserId,
-            name: `${first_name} ${last_name}`,
-            email,
-            role: 'Student',
-            photo:image_url,
-          },
-        });
-        console.log('User created:', user);
-        break;
-      case 'user.deleted':
-       user = await prisma.user.delete({
-            where: {
-              clerkUserId,
-            },
-          });
-        console.log('User deleted:', user);
-        break;
-      default:
-        console.warn('Unhandled event type:', evt.type);
-        break;
-    }
+              const user = {
+                clerkUserId:id,
+                email: email_addresses[0].email_address,
+                name: `${first_name} ${last_name}`,
+                image: image_url
 
-    return NextResponse.json({ user });
-  } catch (error) {
-    console.error('Error processing webhook:', error);
-    return NextResponse.json(
-      { error: 'Internal server error. Please check the logs.' },
-      { status: 500 }
-    );
-  }
+              }
+
+            await  createUser(user as any)
+        }
+        if(evt.type === 'user.updated'){
+            const {id, email_addresses, first_name, last_name, image_url} = evt.data
+
+            if(!id) {
+              return new Response('Invalid data', {status: 400})
+
+            }
+
+            const data = {
+              email: email_addresses[0].email_address,
+              name: `${first_name} ${last_name}`,
+              image: image_url
+            }
+           await UpdateUser({id, data} as any)
+        }
+        if(evt.type === 'user.deleted'){
+            const {id} = evt.data
+            if(!id){
+              return new Response('Invalid data', {status: 400})
+
+            }
+            await prisma.user.delete({
+              where:{
+                clerkUserId:id
+              }
+            })
+        }
+        return new Response('Webhook received', {status: 200})
+
+      }
+      catch (error) {
+        console.log(error)
+        return new Response('Internal server error', {status: 500})
+      }
 }
 
 

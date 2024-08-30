@@ -18,6 +18,18 @@ export async function getByClerkId(id:string){
 }
 
 
+export async function createUser(data:UserSchema){
+    try{
+        const user = await prisma.user.create({data})
+        return {user}
+
+    }
+    catch(error){
+        return {error}
+    }
+}
+
+
 
 export async function UpdateUser({id, data}:{id:string,data:UserSchema}){
     return  prisma.user.update({
